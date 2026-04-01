@@ -1,11 +1,14 @@
+// lib/widgets/memory_card.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:toosmalltoforget/models/memory.dart';
+import 'package:toosmalltoforget/theme/app_colors.dart';
 
 class MemoryCard extends StatelessWidget {
   final Memory memory;
   final String categoryName;
-  final VoidCallback onDelete; // callback to delete the memory
+  final VoidCallback onDelete;
 
   const MemoryCard({
     super.key,
@@ -16,112 +19,260 @@ class MemoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Dismissible wraps the card to allow swipe-to-delete
     return Dismissible(
-      key: Key(memory.id.toString()), // each card needs a unique key
-      direction: DismissDirection.endToStart, // swipe from right to left
-      background: Container(
-        color: Colors.red,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      onDismissed: (direction) {
-        onDelete(); // call the delete callback passed from parent
+      key: Key(memory.id.toString()),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (_) => _buildDeleteDialog(context),
+        );
       },
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 12),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Optional thumbnail
-              if (memory.photoPath != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.file(
-                    File(memory.photoPath!),
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      // If image fails to load, show a placeholder
-                      return Container(
-                        width: 50,
-                        height: 50,
-                        color: Colors.grey,
-                        child: const Icon(Icons.broken_image),
-                      );
-                    },
-                  ),
-                ),
-              if (memory.photoPath != null) const SizedBox(width: 12),
+      background: _buildDismissBackground(),
+      onDismissed: (_) => onDelete(),
+      child: _buildCard(context),
+    );
+  }
 
-              // Text content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      memory.title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    if (memory.details.isNotEmpty)
-                      Text(
-                        memory.details,
-                        style: TextStyle(color: Colors.grey.shade600),
-                      ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        // Category chip (if any)
-                        if (categoryName.isNotEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade100,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+
+  Widget _buildCard(BuildContext context) {
+    final bool hasPhoto = memory.photoPath != null;
+    final bool hasReminder = memory.reminder != null;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 14.h),
+      decoration: BoxDecoration(
+        gradient: AppColors.cardOverlay,
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(color: AppColors.cardBorder, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18.r),
+          onTap: () {/* detail view */},
+          splashColor: AppColors.primary.withOpacity(0.06),
+          child: Padding(
+            padding: EdgeInsets.all(16.w),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (hasPhoto) ...[
+                  _buildPhotoThumbnail(),
+                  SizedBox(width: 14.w),
+                ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title + optional reminder icon
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
                             child: Text(
-                              categoryName,
-                              style: TextStyle(fontSize: 10, color: Colors.blue.shade800),
+                              memory.title,
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                                letterSpacing: -0.2,
+                                height: 1.3,
+                              ),
                             ),
                           ),
-                        if (categoryName.isNotEmpty) const SizedBox(width: 8),
+                          if (hasReminder) ...[
+                            SizedBox(width: 8.w),
+                            Padding(
+                              padding: EdgeInsets.only(top: 2.h),
+                              child: Icon(
+                                Icons.alarm_rounded,
+                                size: 15.sp,
+                                color: AppColors.amber,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
 
-                        // Relative time
+                      if (memory.details.isNotEmpty) ...[
+                        SizedBox(height: 5.h),
                         Text(
-                          _formatRelativeTime(memory.date),
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                          memory.details,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13.sp,
+                            height: 1.55,
+                          ),
                         ),
                       ],
-                    ),
-                  ],
+
+                      SizedBox(height: 12.h),
+
+                      // Footer row: category pill + date
+                      Row(
+                        children: [
+                          if (categoryName.isNotEmpty)
+                            _buildCategoryPill(categoryName),
+                          const Spacer(),
+                          _buildDateLabel(),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // Helper to format relative time (same as before)
-  String _formatRelativeTime(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
 
-    if (difference.inDays > 7) {
-      return '${difference.inDays ~/ 7} weeks ago';
-    } else if (difference.inDays >= 1) {
-      return '${difference.inDays} days ago';
-    } else if (difference.inHours >= 1) {
-      return '${difference.inHours} hours ago';
-    } else if (difference.inMinutes >= 1) {
-      return '${difference.inMinutes} minutes ago';
-    } else {
-      return 'just now';
-    }
+  Widget _buildPhotoThumbnail() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12.r),
+      child: Image.file(
+        File(memory.photoPath!),
+        width: 68.w,
+        height: 68.w,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildPhotoPlaceholder(),
+      ),
+    );
+  }
+
+  Widget _buildPhotoPlaceholder() {
+    return Container(
+      width: 68.w,
+      height: 68.w,
+      decoration: BoxDecoration(
+        color: AppColors.cardBorder,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Icon(Icons.image_not_supported_rounded, color: AppColors.textTertiary, size: 24.sp),
+    );
+  }
+
+
+  Widget _buildCategoryPill(String name) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: AppColors.primaryMuted,
+        borderRadius: BorderRadius.circular(20.r),
+      ),
+      child: Text(
+        name,
+        style: TextStyle(
+          fontSize: 11.sp,
+          color: AppColors.primary,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.2,
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildDateLabel() {
+    return Row(
+      children: [
+        Icon(Icons.access_time_rounded, size: 11.sp, color: AppColors.textTertiary),
+        SizedBox(width: 3.w),
+        Text(
+          _formatRelativeTime(memory.date),
+          style: TextStyle(
+            fontSize: 11.sp,
+            color: AppColors.textTertiary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+
+  Widget _buildDismissBackground() {
+    return Container(
+      margin: EdgeInsets.only(bottom: 14.h),
+      decoration: BoxDecoration(
+        color: AppColors.danger,
+        borderRadius: BorderRadius.circular(18.r),
+      ),
+      alignment: Alignment.centerRight,
+      padding: EdgeInsets.only(right: 24.w),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.delete_outline_rounded, color: Colors.white, size: 26.sp),
+          SizedBox(height: 4.h),
+          Text(
+            'Delete',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildDeleteDialog(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.surfaceElevated,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Text(
+        'Delete memory?',
+        style: TextStyle(color: AppColors.textLight, fontWeight: FontWeight.w600),
+      ),
+      content: Text(
+        '"${memory.title}" will be permanently removed.',
+        style: const TextStyle(color: AppColors.textMid),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.danger,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          child: const Text('Delete'),
+        ),
+      ],
+    );
+  }
+
+
+  String _formatRelativeTime(DateTime date) {
+    final diff = DateTime.now().difference(date);
+    if (diff.inDays > 30) return '${diff.inDays ~/ 30}mo ago';
+    if (diff.inDays > 7) return '${diff.inDays ~/ 7}w ago';
+    if (diff.inDays >= 1) return '${diff.inDays}d ago';
+    if (diff.inHours >= 1) return '${diff.inHours}h ago';
+    if (diff.inMinutes >= 1) return '${diff.inMinutes}m ago';
+    return 'Just now';
   }
 }
