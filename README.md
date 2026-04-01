@@ -1,34 +1,5 @@
 # Too Small To Forget
 
-A Flutter app for capturing and organizing small moments you do not want to lose: memories with optional photos, categories, search, and scheduled local reminders on **iOS** and **Android**. Data stays on the device in a local SQLite database.
-
----
-
-## Screenshots
-
-Add your own images (recommended folder: `docs/screenshots/`). Replace the paths below or drop files with matching names.
-
-| | |
-|:--:|:--:|
-| ![Home — memory list, search, category chips](docs/screenshots/01-home.png) | ![New memory — title, details, date, reminder, category, photo](docs/screenshots/02-add-memory.png) |
-| *Home: list, search, filters* | *New memory form* |
-
-| | |
-|:--:|:--:|
-| ![Memory detail — bottom sheet](docs/screenshots/03-memory-detail.png) | ![Reminder notification](docs/screenshots/04-notification.png) |
-| *Memory detail (tap a card)* | *Reminder notification (OS)* |
-
-**Suggested screenshot checklist**
-
-1. Home screen with at least one memory (with and without photo).
-2. Add memory screen with a reminder set (shows date + time + “Remove reminder”).
-3. Memory detail bottom sheet (photo, dates, category, full text).
-4. Category chips (optional: long-press delete confirmation).
-5. Empty state (no memories yet).
-6. OS notification for a due reminder (Android and/or iOS).
-
----
-
 ## Overview
 
 **Too Small To Forget** lets you:
@@ -160,7 +131,7 @@ Scheduled notifications use the memory’s **`id`** as the notification `id` so 
 ### Install
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/MahmoudShawky1612/Too-Small-To-Forget
 cd toosmalltoforget
 flutter pub get
 ```
@@ -173,74 +144,6 @@ flutter run
 
 Pick a device with `flutter devices`.
 
-### Analyze & tests
-
-```bash
-dart analyze
-flutter test
-```
-
----
-
-## Building for release
-
-### Android
-
-```bash
-flutter build apk   # or appbundle for Play Store
-```
-
-Review `android/app/build.gradle.kts` (application ID, signing for release). The manifest includes permissions for camera, storage (as applicable), exact alarms, boot completed, and receivers required by `flutter_local_notifications` for scheduled notifications.
-
-### iOS
-
-```bash
-flutter build ios
-```
-
-Open `ios/Runner.xcworkspace` in Xcode for signing, capabilities, and App Store upload. Ensure notification permissions are accepted in **Settings** on device if reminders do not appear.
-
----
-
-## Platform notes
-
-### Android
-
-- **Notification permission** (Android 13+): requested at startup via the plugin.
-- **Exact alarms** (Android 12+ / 14+): requested when needed for precise reminder times; users may need to allow alarms in system settings.
-- **Receivers** in `AndroidManifest.xml`: `ScheduledNotificationReceiver`, `ScheduledNotificationBootReceiver` (plus `RECEIVE_BOOT_COMPLETED`) so scheduled notifications can fire and be restored after reboot/update.
-
-### iOS
-
-- Local notifications use the standard permission flow; the user must allow alerts for reminders to show.
-- `Info.plist` includes usage strings for camera and photo library (required for `image_picker`).
-
-### Photos
-
-- Images are copied into the app documents directory and the path is stored in SQLite. If a file is missing, the UI shows a broken-image placeholder where applicable.
-
----
-
-## App branding & icons
-
-The project uses [flutter_launcher_icons](https://pub.dev/packages/flutter_launcher_icons) (see `pubspec.yaml`) with `assets/icon/app_icon2.png` for Android and iOS launcher icons. Regenerate icons after changing the source asset:
-
-```bash
-dart run flutter_launcher_icons
-```
-
----
-
-## Troubleshooting
-
-| Issue | What to check |
-|-------|----------------|
-| Reminders never fire | OS notification permission; Android “Alarms & reminders” / exact alarm; battery optimization not killing the app; reminder time in the future |
-| Reminder shows wrong time | Device timezone; app uses `flutter_timezone` + `timezone` package for scheduling |
-| Category deleted but memories “missing” | Memories are filtered by category; switch to **All** or search |
-| Photo not loading | File was deleted outside the app; path in DB is invalid |
-
----
 
 ## License
 

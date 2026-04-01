@@ -64,27 +64,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(),
-          SliverPadding(
-            padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 100.h),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                _buildSearchBar(),
-                SizedBox(height: 20.h),
-                _buildCategoryRow(),
-                SizedBox(height: 24.h),
-                _buildMemoriesSection(),
-              ]),
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: CustomScrollView(
+          slivers: [
+            _buildSliverAppBar(),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 100.h),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _buildSearchBar(),
+                  SizedBox(height: 20.h),
+                  _buildCategoryRow(),
+                  SizedBox(height: 24.h),
+                  _buildMemoriesSection(),
+                ]),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+        floatingActionButton: _buildFAB(),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
-      floatingActionButton: _buildFAB(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 

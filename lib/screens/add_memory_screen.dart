@@ -79,92 +79,95 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: _buildAppBar(),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 40.h),
-          children: [
-             _buildSectionLabel('Title'),
-            SizedBox(height: 8.h),
-            _buildTextField(
-              controller: _titleController,
-              hint: 'What happened?',
-              maxLines: 1,
-              validator: (v) => v?.trim().isEmpty == true ? 'Please add a title' : null,
-            ),
-            SizedBox(height: 22.h),
-
-             _buildSectionLabel('Details'),
-            SizedBox(height: 8.h),
-            _buildTextField(
-              controller: _detailsController,
-              hint: 'Tell the full story…',
-              maxLines: 5,
-            ),
-            SizedBox(height: 26.h),
-
-             _buildSectionLabel('When'),
-            SizedBox(height: 8.h),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildTappableTile(
-                    label: 'Date',
-                    value: _formatDate(_selectedDate),
-                    icon: Icons.calendar_today_rounded,
-                    onTap: helper.selectDate,
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: _buildTappableTile(
-                    label: 'Reminder',
-                    value: _reminderDate == null
-                        ? 'None'
-                        : _formatReminder(_reminderDate!),
-                    icon: Icons.alarm_rounded,
-                    onTap: helper.selectReminder,
-                    hasValue: _reminderDate != null,
-                  ),
-                ),
-              ],
-            ),
-            if (_reminderDate != null) ...[
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: _buildAppBar(),
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 40.h),
+            children: [
+               _buildSectionLabel('Title'),
               SizedBox(height: 8.h),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: helper.clearReminder,
-                  child: Text(
-                    'Remove reminder',
-                    style: TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w500,
+              _buildTextField(
+                controller: _titleController,
+                hint: 'What happened?',
+                maxLines: 1,
+                validator: (v) => v?.trim().isEmpty == true ? 'Please add a title' : null,
+              ),
+              SizedBox(height: 22.h),
+
+               _buildSectionLabel('Details'),
+              SizedBox(height: 8.h),
+              _buildTextField(
+                controller: _detailsController,
+                hint: 'Tell the full story…',
+                maxLines: 5,
+              ),
+              SizedBox(height: 26.h),
+
+               _buildSectionLabel('When'),
+              SizedBox(height: 8.h),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTappableTile(
+                      label: 'Date',
+                      value: _formatDate(_selectedDate),
+                      icon: Icons.calendar_today_rounded,
+                      onTap: helper.selectDate,
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: _buildTappableTile(
+                      label: 'Reminder',
+                      value: _reminderDate == null
+                          ? 'None'
+                          : _formatReminder(_reminderDate!),
+                      icon: Icons.alarm_rounded,
+                      onTap: helper.selectReminder,
+                      hasValue: _reminderDate != null,
+                    ),
+                  ),
+                ],
+              ),
+              if (_reminderDate != null) ...[
+                SizedBox(height: 8.h),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: helper.clearReminder,
+                    child: Text(
+                      'Remove reminder',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
+              SizedBox(height: 26.h),
+
+               _buildSectionLabel('Category'),
+              SizedBox(height: 8.h),
+              _buildCategoryDropdown(),
+              SizedBox(height: 8.h),
+              _buildAddCategoryButton(),
+              SizedBox(height: 26.h),
+
+               _buildSectionLabel('Photo'),
+              SizedBox(height: 8.h),
+              _buildPhotoSection(),
+              SizedBox(height: 36.h),
+
+               _buildSaveButton(),
             ],
-            SizedBox(height: 26.h),
-
-             _buildSectionLabel('Category'),
-            SizedBox(height: 8.h),
-            _buildCategoryDropdown(),
-            SizedBox(height: 8.h),
-            _buildAddCategoryButton(),
-            SizedBox(height: 26.h),
-
-             _buildSectionLabel('Photo'),
-            SizedBox(height: 8.h),
-            _buildPhotoSection(),
-            SizedBox(height: 36.h),
-
-             _buildSaveButton(),
-          ],
+          ),
         ),
       ),
     );
