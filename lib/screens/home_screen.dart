@@ -4,7 +4,7 @@ import 'package:toosmalltoforget/screens/add_memory_screen.dart';
 import 'package:toosmalltoforget/services/database_helper.dart';
 import 'package:toosmalltoforget/widgets/memory_card.dart';
 
-import 'home_screen_helper.dart';
+import '../helpers/home_screen_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
