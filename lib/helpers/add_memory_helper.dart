@@ -78,6 +78,11 @@ class AddMemoryHelper {
     refresh();
   }
 
+  void clearReminder() {
+    reminderDate = null;
+    refresh();
+  }
+
   Future<void> pickImage() async {
     await showModalBottomSheet(
       context: context,

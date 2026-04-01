@@ -1,7 +1,7 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../models/category.dart';
+import '../theme/app_colors.dart';
 import '../models/memory.dart';
 import '../services/database_helper.dart';
 
@@ -51,6 +51,37 @@ class HomeScreenHelper {
     selectedCategoryId = categoryId;
     refresh();
     loadMemories();
+  }
+
+  Future<void> deleteCategory(Category category) async {
+    if (category.id == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Delete "${category.name}"?'),
+        content: const Text(
+          'Memories will stay in your list, but they will no longer use this category.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await dbHelper.deleteCategory(category.id!);
+    if (selectedCategoryId == category.id) {
+      selectedCategoryId = null;
+    }
+    await loadCategories();
+    await loadMemories();
   }
 
   // Show dialog to add a new category

@@ -132,6 +132,23 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
                 ),
               ],
             ),
+            if (_reminderDate != null) ...[
+              SizedBox(height: 8.h),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: helper.clearReminder,
+                  child: Text(
+                    'Remove reminder',
+                    style: TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
             SizedBox(height: 26.h),
 
              _buildSectionLabel('Category'),

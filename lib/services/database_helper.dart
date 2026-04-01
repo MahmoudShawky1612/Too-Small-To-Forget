@@ -79,9 +79,18 @@ class DatabaseHelper {
     return List.generate(maps.length, (i) => Category.fromMap(maps[i]));
   }
 
+  /// Removes the category and sets [categoryId] to null on linked memories.
   Future<int> deleteCategory(int id) async {
-    Database db = await database;
-    return await db.delete('categories', where: 'id = ?', whereArgs: [id]);
+    final Database db = await database;
+    return db.transaction<int>((txn) async {
+      await txn.update(
+        'memories',
+        {'categoryId': null},
+        where: 'categoryId = ?',
+        whereArgs: [id],
+      );
+      return txn.delete('categories', where: 'id = ?', whereArgs: [id]);
+    });
   }
 
   // -------- Memory CRUD (with filters) ----------

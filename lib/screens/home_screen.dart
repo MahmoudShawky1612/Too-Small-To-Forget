@@ -172,7 +172,8 @@ class _HomeScreenState extends State<HomeScreen> {
             child: _buildChip(
               cat.name,
               _helper.selectedCategoryId == cat.id,
-                  () => _helper.selectCategory(cat.id),
+              () => _helper.selectCategory(cat.id),
+              onLongPress: () => _helper.deleteCategory(cat),
             ),
           )),
           _buildAddCategoryButton(),
@@ -181,9 +182,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildChip(String label, bool selected, VoidCallback onTap) {
+  Widget _buildChip(
+    String label,
+    bool selected,
+    VoidCallback onTap, {
+    VoidCallback? onLongPress,
+  }) {
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
@@ -393,6 +400,39 @@ class _HomeScreenState extends State<HomeScreen> {
                             label: 'Reminder',
                             value: _formatDetailReminder(memory.reminder!),
                           ),
+                          if (memory.id != null) ...[
+                            SizedBox(height: 14.h),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: () =>
+                                    _confirmRemoveReminder(ctx, memory),
+                                icon: Icon(
+                                  Icons.notifications_off_outlined,
+                                  size: 18.sp,
+                                  color: AppColors.textMid,
+                                ),
+                                label: Text(
+                                  'Remove reminder',
+                                  style: TextStyle(
+                                    color: AppColors.textLight,
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.textLight,
+                                  side: const BorderSide(color: AppColors.border),
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: 12.h,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12.r),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                         if (_helper.getCategoryName(memory.categoryId).isNotEmpty) ...[
                           SizedBox(height: 14.h),
@@ -468,6 +508,68 @@ class _HomeScreenState extends State<HomeScreen> {
   String _formatDetailDate(DateTime d) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${months[d.month - 1]} ${d.day}, ${d.year}';
+  }
+
+  Future<void> _confirmRemoveReminder(
+    BuildContext sheetContext,
+    Memory memory,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: sheetContext,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.surfaceElevated,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.r),
+        ),
+        title: Text(
+          'Remove reminder?',
+          style: TextStyle(
+            color: AppColors.textLight,
+            fontSize: 18.sp,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          'You will no longer get a notification for this memory.',
+          style: TextStyle(color: AppColors.textMid, fontSize: 14.sp),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 14.sp),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(
+              'Remove',
+              style: TextStyle(
+                color: AppColors.danger,
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || memory.id == null) return;
+
+    final updated = Memory(
+      id: memory.id,
+      title: memory.title,
+      details: memory.details,
+      date: memory.date,
+      categoryId: memory.categoryId,
+      reminder: null,
+      photoPath: memory.photoPath,
+    );
+    await _dbHelper.updateMemory(updated);
+    await NotificationService().cancelNotification(memory.id!);
+    if (sheetContext.mounted) Navigator.pop(sheetContext);
+    _helper.loadMemories();
   }
 
   String _formatDetailReminder(DateTime d) {
