@@ -3,10 +3,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:toosmalltoforget/screens/home_screen.dart';
+import 'package:toosmalltoforget/services/database_helper.dart';
+import 'package:toosmalltoforget/services/notification_service.dart';
 import 'package:toosmalltoforget/theme/app_colors.dart';
+
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize notification service
+  final notificationService = NotificationService();
+  await notificationService.init((payload) {
+    // Optional: handle notification tap – for now just open app
+  });
+  await notificationService.requestPermissions();
+
+  // Reschedule any pending reminders (e.g., after reboot)
+  await _rescheduleReminders();
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -16,6 +31,22 @@ void main() async {
     ),
   );
   runApp(const MyApp());
+}
+
+Future<void> _rescheduleReminders() async {
+  final dbHelper = DatabaseHelper();
+  final reminders = await dbHelper.getFutureReminders(); // we'll add this method
+  final notifications = NotificationService();
+  for (final memory in reminders) {
+    if (memory.reminder != null && memory.id != null) {
+      await notifications.scheduleNotification(
+        id: memory.id!,
+        title: 'Reminder: ${memory.title}',
+        body: memory.details.isNotEmpty ? memory.details : 'Tap to view memory',
+        scheduledDate: memory.reminder!,
+      );
+    }
+  }
 }
 
 class MyApp extends StatelessWidget {

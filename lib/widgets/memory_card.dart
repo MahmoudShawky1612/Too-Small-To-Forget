@@ -9,12 +9,14 @@ class MemoryCard extends StatelessWidget {
   final Memory memory;
   final String categoryName;
   final VoidCallback onDelete;
+  final VoidCallback onTap;
 
   const MemoryCard({
     super.key,
     required this.memory,
     required this.categoryName,
     required this.onDelete,
+    required this.onTap,
   });
 
   @override
@@ -67,7 +69,7 @@ class MemoryCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(18.r),
           splashColor: AppColors.primary.withOpacity(0.08),
           highlightColor: AppColors.cardBackgroundPressed.withOpacity(0.15),
-          onTap: () {},
+          onTap: onTap,
           child: Padding(
             padding: EdgeInsets.all(16.w),
             child: Row(

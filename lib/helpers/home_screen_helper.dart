@@ -24,8 +24,6 @@ class HomeScreenHelper {
     required this.selectedCategoryId,
     required this.searchQuery,
   });
-  final DatabaseHelper _dbHelper = DatabaseHelper();
-
 
   // Load categories from database
   Future<void> loadCategories() async {
@@ -102,5 +100,4 @@ class HomeScreenHelper {
     );
     return category.name;
   }
-
 }

@@ -1,9 +1,12 @@
 // lib/screens/home_screen.dart
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:toosmalltoforget/models/memory.dart';
 import 'package:toosmalltoforget/screens/add_memory_screen.dart';
 import 'package:toosmalltoforget/services/database_helper.dart';
+import 'package:toosmalltoforget/services/notification_service.dart';
 import 'package:toosmalltoforget/theme/app_colors.dart';
 import 'package:toosmalltoforget/widgets/memory_card.dart';
 import '../helpers/home_screen_helper.dart';
@@ -36,12 +39,25 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onAddMemory(Memory newMemory) async {
-    await _dbHelper.insertMemory(newMemory);
+    final id = await _dbHelper.insertMemory(newMemory);
+    if (newMemory.reminder != null) {
+      await NotificationService().scheduleNotification(
+        id: id,
+        title: 'Reminder: ${newMemory.title}',
+        body: newMemory.details.isNotEmpty
+            ? newMemory.details
+            : 'Tap to view memory',
+        scheduledDate: newMemory.reminder!,
+      );
+    }
     await _helper.loadCategories();
     _helper.loadMemories();
   }
 
   Future<void> _onDeleteMemory(Memory memory) async {
+    if (memory.id != null) {
+      await NotificationService().cancelNotification(memory.id!);
+    }
     await _dbHelper.deleteMemory(memory.id!);
     _helper.loadMemories();
   }
@@ -240,6 +256,7 @@ class _HomeScreenState extends State<HomeScreen> {
             memory: memory,
             categoryName: _helper.getCategoryName(memory.categoryId),
             onDelete: () => _onDeleteMemory(memory),
+            onTap: () => _showMemoryDetail(memory),
           );
         }),
       ],
@@ -287,6 +304,180 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+
+  void _showMemoryDetail(Memory memory) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.72,
+          minChildSize: 0.45,
+          maxChildSize: 0.94,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: [
+                  SizedBox(height: 10.h),
+                  Container(
+                    width: 40.w,
+                    height: 4.h,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2.r),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(20.w, 16.h, 12.w, 8.h),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            memory.title,
+                            style: TextStyle(
+                              color: AppColors.textLight,
+                              fontSize: 20.sp,
+                              fontWeight: FontWeight.w600,
+                              height: 1.25,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          icon: Icon(Icons.close_rounded, color: AppColors.textMid, size: 22.sp),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView(
+                      controller: scrollController,
+                      padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 28.h),
+                      children: [
+                        if (memory.photoPath != null) ...[
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(14.r),
+                            child: Image.file(
+                              File(memory.photoPath!),
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                height: 120.h,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceElevated,
+                                  borderRadius: BorderRadius.circular(14.r),
+                                ),
+                                child: Icon(Icons.broken_image_outlined, color: AppColors.textMuted, size: 40.sp),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 20.h),
+                        ],
+                        _detailRow(
+                          icon: Icons.calendar_today_rounded,
+                          label: 'Memory date',
+                          value: _formatDetailDate(memory.date),
+                        ),
+                        if (memory.reminder != null) ...[
+                          SizedBox(height: 14.h),
+                          _detailRow(
+                            icon: Icons.alarm_rounded,
+                            label: 'Reminder',
+                            value: _formatDetailReminder(memory.reminder!),
+                          ),
+                        ],
+                        if (_helper.getCategoryName(memory.categoryId).isNotEmpty) ...[
+                          SizedBox(height: 14.h),
+                          _detailRow(
+                            icon: Icons.label_outline_rounded,
+                            label: 'Category',
+                            value: _helper.getCategoryName(memory.categoryId),
+                          ),
+                        ],
+                        if (memory.details.isNotEmpty) ...[
+                          SizedBox(height: 22.h),
+                          Text(
+                            'DETAILS',
+                            style: TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          SizedBox(height: 10.h),
+                          Text(
+                            memory.details,
+                            style: TextStyle(
+                              color: AppColors.textLight,
+                              fontSize: 15.sp,
+                              height: 1.55,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _detailRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18.sp, color: AppColors.primary),
+        SizedBox(width: 12.w),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(color: AppColors.textMuted, fontSize: 12.sp, fontWeight: FontWeight.w500),
+              ),
+              SizedBox(height: 4.h),
+              Text(
+                value,
+                style: TextStyle(color: AppColors.textLight, fontSize: 14.sp, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatDetailDate(DateTime d) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[d.month - 1]} ${d.day}, ${d.year}';
+  }
+
+  String _formatDetailReminder(DateTime d) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final h = d.hour;
+    final m = d.minute;
+    final period = h >= 12 ? 'PM' : 'AM';
+    final hour12 = h % 12 == 0 ? 12 : h % 12;
+    return '${months[d.month - 1]} ${d.day}, ${d.year} · $hour12:${m.toString().padLeft(2, '0')} $period';
+  }
 
   Widget _buildFAB() {
     return FloatingActionButton(

@@ -37,7 +37,7 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
     helper = AddMemoryHelper(
       dbHelper: _dbHelper,
       context: context,
-      refresh: () => setState(() {}),
+      refresh: () => setState(_syncFromHelper),
       categories: _categories,
       selectedCategory: _selectedCategory,
       selectedDate: _selectedDate,
@@ -45,6 +45,15 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
       selectedImage: _selectedImage,
     );
     helper.loadCategories();
+  }
+
+  /// Helper mutates its own fields; the screen's state must mirror them for UI & save.
+  void _syncFromHelper() {
+    _reminderDate = helper.reminderDate;
+    _selectedDate = helper.selectedDate;
+    _categories = helper.categories;
+    _selectedCategory = helper.selectedCategory;
+    _selectedImage = helper.selectedImage;
   }
 
   @override
@@ -113,7 +122,9 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
                 Expanded(
                   child: _buildTappableTile(
                     label: 'Reminder',
-                    value: _reminderDate == null ? 'None' : _formatDate(_reminderDate!),
+                    value: _reminderDate == null
+                        ? 'None'
+                        : _formatReminder(_reminderDate!),
                     icon: Icons.alarm_rounded,
                     onTap: helper.selectReminder,
                     hasValue: _reminderDate != null,
@@ -387,5 +398,14 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
   String _formatDate(DateTime date) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  String _formatReminder(DateTime date) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final h = date.hour;
+    final m = date.minute;
+    final period = h >= 12 ? 'PM' : 'AM';
+    final hour12 = h % 12 == 0 ? 12 : h % 12;
+    return '${months[date.month - 1]} ${date.day}, ${date.year} · $hour12:${m.toString().padLeft(2, '0')} $period';
   }
 }

@@ -141,4 +141,17 @@ class DatabaseHelper {
     Database db = await database;
     return await db.delete('memories', where: 'id = ?', whereArgs: [id]);
   }
+
+  // Get memories that have a reminder in the future
+  Future<List<Memory>> getFutureReminders() async {
+    Database db = await database;
+    final now = DateTime.now().toIso8601String();
+    final List<Map<String, dynamic>> maps = await db.query(
+      'memories',
+      where: 'reminder > ?',
+      whereArgs: [now],
+      orderBy: 'reminder ASC',
+    );
+    return List.generate(maps.length, (i) => Memory.fromMap(maps[i]));
+  }
 }
