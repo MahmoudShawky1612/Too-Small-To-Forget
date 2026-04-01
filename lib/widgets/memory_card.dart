@@ -44,26 +44,30 @@ class MemoryCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: AppColors.cardOverlay,
         borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(color: AppColors.cardBorder, width: 1),
+        border: Border.all(
+          color: AppColors.cardBorder,
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: Colors.black.withOpacity(0.35),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.04),
-            blurRadius: 8,
+            color: AppColors.primary.withOpacity(0.06),
+            blurRadius: 10,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Material(
-        type: MaterialType.transparency,
+        color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(18.r),
-          onTap: () {/* detail view */},
-          splashColor: AppColors.primary.withOpacity(0.06),
+          splashColor: AppColors.primary.withOpacity(0.08),
+          highlightColor: AppColors.cardBackgroundPressed.withOpacity(0.15),
+          onTap: () {},
           child: Padding(
             padding: EdgeInsets.all(16.w),
             child: Row(
