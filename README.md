@@ -119,6 +119,13 @@ lib/
 Scheduled notifications use the memory’s **`id`** as the notification `id` so scheduling, cancelling, and rescheduling stay aligned.
 
 ---
+# ScreenShots
+![Screenshot_2026-04-01-21-04-27-66_8ab65562ba563704112171ec5a79fc71](https://github.com/user-attachments/assets/4125e5f0-0eec-44f7-bda3-28d108c2683b)![Screenshot_2026-04-01-21-04-30-36_8ab65562ba563704112171ec5a79fc71](https://github.com/user-attachments/assets/07f123ce-f0a2-4aea-8427-3338b85117e2)
+![Screenshot_2026-04-01-21-04-51-03_8ab65562ba563704112171ec5a79fc71](https://github.com/user-attachments/assets/2b934824-bdb5-4187-ade6-f9724d895648)
+![Screenshot_2026-04-01-21-04-59-82_8ab65562ba563704112171ec5a79fc71](https://github.com/user-attachments/assets/a1d45056-3235-413d-9e15-cd758c51edf4)
+
+
+---
 
 ## Getting started
 
