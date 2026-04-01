@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:toosmalltoforget/models/memory.dart';
-import 'package:toosmalltoforget/models/category.dart';
-import 'package:toosmalltoforget/services/database_helper.dart';
 import 'package:toosmalltoforget/screens/add_memory_screen.dart';
+import 'package:toosmalltoforget/services/database_helper.dart';
 import 'package:toosmalltoforget/widgets/memory_card.dart';
+
+import 'home_screen_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,96 +15,45 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper();
-  List<Memory> _memories = [];
-  List<Category> _categories = [];
-  int? _selectedCategoryId; // null = All
-  String _searchQuery = '';
+  late HomeScreenHelper _helper;
 
   @override
   void initState() {
     super.initState();
-    _loadCategories(); // load categories first
-    _loadMemories();   // then load memories
-  }
-
-  // Load categories from database
-  Future<void> _loadCategories() async {
-    final cats = await _dbHelper.getAllCategories();
-    setState(() {
-      _categories = cats;
-    });
-  }
-
-  // Load memories based on current filters
-  Future<void> _loadMemories() async {
-    final memories = await _dbHelper.getMemories(
-      categoryId: _selectedCategoryId,
-      searchQuery: _searchQuery.isEmpty ? null : _searchQuery,
-    );
-    setState(() {
-      _memories = memories;
-    });
-  }
-
-  // Called when search text changes
-  void _onSearchChanged(String query) {
-    _searchQuery = query;
-    _loadMemories();
-  }
-
-  // Called when a category chip is tapped
-  void _selectCategory(int? categoryId) {
-    setState(() {
-      _selectedCategoryId = categoryId;
-    });
-    _loadMemories();
-  }
-
-  // Show dialog to add a new category
-  Future<void> _addCategory() async {
-    String? newCategoryName;
-    await showDialog(
+    _helper = HomeScreenHelper(
+      dbHelper: _dbHelper,
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('New Category'),
-        content: TextField(
-          autofocus: true,
-          decoration: const InputDecoration(hintText: 'Category name'),
-          onChanged: (value) => newCategoryName = value,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              if (newCategoryName != null && newCategoryName!.isNotEmpty) {
-                final newCategory = Category(name: newCategoryName!);
-                await _dbHelper.insertCategory(newCategory);
-                await _loadCategories(); // refresh chips
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
+      refresh: () => setState(() {}),
+      // triggers rebuild when helper changes data
+      categories: [],
+      // will be replaced later by helper's loadCategories
+      memories: [],
+      // will be replaced later
+      selectedCategoryId: null,
+      searchQuery: '',
     );
+    // Load initial data
+    _helper.loadCategories();
+    _helper.loadMemories();
   }
 
-  // Helper to get category name from ID for display in MemoryCard
-  String _getCategoryName(int? categoryId) {
-    if (categoryId == null) return '';
-    final category = _categories.firstWhere(
-          (c) => c.id == categoryId,
-      orElse: () => Category(name: ''),
-    );
-    return category.name;
+  // Called when adding a new memory from add screen
+  Future<void> _onAddMemory(Memory newMemory) async {
+    await _dbHelper.insertMemory(newMemory);
+    // Refresh categories (in case a new category was created) and memories
+    await _helper.loadCategories();
+    _helper.loadMemories();
+  }
+
+  // Called when deleting a memory
+  Future<void> _onDeleteMemory(Memory memory) async {
+    await _dbHelper.deleteMemory(memory.id!);
+    _helper.loadMemories();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Use helper's data directly
     return Scaffold(
       appBar: AppBar(
         title: const Text('Too Small To Forget'),
@@ -125,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 filled: true,
                 fillColor: Colors.grey.shade800,
               ),
-              onChanged: _onSearchChanged,
+              onChanged: _helper.onSearchChanged,
             ),
             const SizedBox(height: 16),
 
@@ -138,19 +88,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   // "All" chip
                   FilterChip(
                     label: const Text('All'),
-                    selected: _selectedCategoryId == null,
-                    onSelected: (_) => _selectCategory(null),
+                    selected: _helper.selectedCategoryId == null,
+                    onSelected: (_) => _helper.selectCategory(null),
                   ),
                   const SizedBox(width: 8),
 
                   // User categories
-                  ..._categories.map((category) {
+                  ..._helper.categories.map((category) {
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: FilterChip(
                         label: Text(category.name),
-                        selected: _selectedCategoryId == category.id,
-                        onSelected: (_) => _selectCategory(category.id),
+                        selected: _helper.selectedCategoryId == category.id,
+                        onSelected: (_) => _helper.selectCategory(category.id),
                       ),
                     );
                   }).toList(),
@@ -158,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   // Add category button (a chip with plus icon)
                   ActionChip(
                     label: const Icon(Icons.add, size: 18),
-                    onPressed: _addCategory,
+                    onPressed: _helper.addCategory,
                     backgroundColor: Colors.grey.shade800,
                   ),
                 ],
@@ -169,17 +119,13 @@ class _HomeScreenState extends State<HomeScreen> {
             // List of memories
             Expanded(
               child: ListView.builder(
-                itemCount: _memories.length,
+                itemCount: _helper.memories.length,
                 itemBuilder: (context, index) {
-                  final memory = _memories[index];
-                  // Pass the memory and its category name to MemoryCard
+                  final memory = _helper.memories[index];
                   return MemoryCard(
                     memory: memory,
-                    categoryName: _getCategoryName(memory.categoryId),
-                    onDelete: () async {
-                      await _dbHelper.deleteMemory(memory.id!);
-                      _loadMemories(); // refresh list
-                    },
+                    categoryName: _helper.getCategoryName(memory.categoryId),
+                    onDelete: () => _onDeleteMemory(memory),
                   );
                 },
               ),
@@ -192,15 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => AddMemoryScreen(
-                onAdd: (newMemory) async {
-                  await _dbHelper.insertMemory(newMemory);
-                  // After adding, we should reload categories and memories
-                  // because the new memory might have a new category or new photo.
-                  await _loadCategories(); // in case a new category was created in Add screen
-                  _loadMemories();
-                },
-              ),
+              builder: (context) => AddMemoryScreen(onAdd: _onAddMemory),
             ),
           );
         },

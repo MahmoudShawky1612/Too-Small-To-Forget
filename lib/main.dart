@@ -14,7 +14,6 @@ class MyApp extends StatelessWidget {
       title: 'Too Small To Forget',
       theme: ThemeData(
         brightness: Brightness.dark,
-        primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
       home:  HomeScreen(),
